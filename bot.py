@@ -11,12 +11,9 @@
 # 
 #    License can be found in < https://github.com/Ayush7445/telegram-auto_forwarder/blob/main/License > .
 
-# Import necessary modules
-from telethon import TelegramClient, events
+from pyrogram import Client, filters
 from decouple import config
 import logging
-from telethon.sessions import StringSession
-import os
 
 # Configure logging
 logging.basicConfig(format='[%(levelname) 5s/%(asctime)s] %(name)s: %(message)s', level=logging.WARNING)
@@ -25,57 +22,62 @@ logging.basicConfig(format='[%(levelname) 5s/%(asctime)s] %(name)s: %(message)s'
 print("Starting...")
 
 # Read configuration from environment variables
-APP_ID = config("APP_ID", default=0, cast=int)
-API_HASH = config("API_HASH", default=None, cast=str)
-SESSION = config("SESSION", default="", cast=str)
-FROM_ = config("FROM_CHANNEL", default="", cast=str)
-TO_ = config("TO_CHANNEL", default="", cast=str)
-
-BLOCKED_TEXTS = config("BLOCKED_TEXTS", default="", cast=lambda x: [i.strip().lower() for i in x.split(',')])
+API_ID = config("API_ID", cast=int)
+API_HASH = config("API_HASH")
+SESSION_STRING = config("SESSION_STRING")
+FROM_CHANNELS = config("FROM_CHANNEL", cast=lambda x: [int(i.strip()) for i in x.split(',')])
+TO_CHANNELS = config("TO_CHANNEL", cast=lambda x: [int(i.strip()) for i in x.split(',')])
+BLOCKED_TEXTS = config("BLOCKED_TEXTS", cast=lambda x: [i.strip().lower() for i in x.split(',')])
 MEDIA_FORWARD_RESPONSE = config("MEDIA_FORWARD_RESPONSE", default="yes").lower()
-
-FROM = [int(i) for i in FROM_.split()]
-TO = [int(i) for i in TO_.split()]
-
-YOUR_ADMIN_USER_ID = config("YOUR_ADMIN_USER_ID", default=0, cast=int)
+YOUR_ADMIN_USER_ID = config("YOUR_ADMIN_USER_ID", cast=int)
 BOT_API_KEY = config("BOT_API_KEY", default="", cast=str)
 
-# Initialize Telethon client
-try:
-    steallootdealUser = TelegramClient(StringSession(SESSION), APP_ID, API_HASH)
-    steallootdealUser.start()
-except Exception as ap:
-    print(f"ERROR - {ap}")
-    exit(1)
+# Initialize Pyrogram client with session string
+app = Client("my_bot", session_string=SESSION_STRING, api_id=API_ID, api_hash=API_HASH, bot_token=BOT_API_KEY)
+
+# Handler for the /start command
+@app.on_message(filters.command("start"))
+async def start(client, message):
+    await message.reply_text(f"Hello {message.from_user.first_name}! Welcome to the Telegram Forwarding Bot. I'm here to help you forward messages.")
+
+# Handler for the /help command
+@app.on_message(filters.command("help"))
+async def help(client, message):
+    help_text = "This bot forwards messages from specified channels to other channels. Configure the bot using the following environment variables:\n"
+    help_text += "1. API_ID: Your API ID\n"
+    help_text += "2. API_HASH: Your API Hash\n"
+    help_text += "3. SESSION_STRING: Your session string\n"
+    help_text += "4. FROM_CHANNEL: Comma-separated list of channel IDs to forward from\n"
+    help_text += "5. TO_CHANNEL: Comma-separated list of channel IDs to forward to\n"
+    help_text += "6. BLOCKED_TEXTS: Comma-separated list of texts to block\n"
+    help_text += "7. MEDIA_FORWARD_RESPONSE: 'yes' to forward media, 'no' to skip\n"
+    help_text += "8. YOUR_ADMIN_USER_ID: Your admin user ID\n"
+    help_text += "9. BOT_API_KEY: Your bot API key\n"
+    await message.reply_text(help_text)
 
 # Event handler for incoming messages
-@steallootdealUser.on(events.NewMessage(incoming=True, chats=FROM))
-async def sender_bH(event):
-    for i in TO:
-        try:
-            message_text = event.raw_text.lower()
+@app.on_message(filters.chat(FROM_CHANNELS))
+async def forward_messages(client, message):
+    try:
+        message_text = message.text.lower() if message.text else ""
 
-            if any(blocked_text in message_text for blocked_text in BLOCKED_TEXTS):
-                print(f"Blocked message containing one of the specified texts: {event.raw_text}")
-                logging.warning(f"Blocked message containing one of the specified texts: {event.raw_text}")
-                continue
+        if any(blocked_text in message_text for blocked_text in BLOCKED_TEXTS):
+            print(f"Blocked message containing one of the specified texts: {message_text}")
+            logging.warning(f"Blocked message containing one of the specified texts: {message_text}")
+            return
 
-            if event.media:
-                user_response = MEDIA_FORWARD_RESPONSE
-                if user_response != 'yes':
-                    print(f"Media forwarding skipped by user for message: {event.raw_text}")
-                    continue
+        if message.media and MEDIA_FORWARD_RESPONSE == 'yes':
+            for to_channel in TO_CHANNELS:
+                await client.send_message(chat_id=to_channel, text=message_text, file=message.document.file_id if message.document else None)
+                print(f"Forwarded media message to channel {to_channel}")
+        else:
+            for to_channel in TO_CHANNELS:
+                await client.send_message(chat_id=to_channel, text=message_text)
+                print(f"Forwarded text message to channel {to_channel}")
 
-                await steallootdealUser.send_message(i, message_text, file=event.media)
-                print(f"Forwarded media message to channel {i}")
-
-            else:
-                await steallootdealUser.send_message(i, message_text)
-                print(f"Forwarded text message to channel {i}")
-
-        except Exception as e:
-            print(f"Error forwarding message to channel {i}: {e}")
+    except Exception as e:
+        print(f"Error forwarding message: {e}")
 
 # Run the bot
 print("Bot has started.")
-steallootdealUser.run_until_disconnected()
+app.run()
