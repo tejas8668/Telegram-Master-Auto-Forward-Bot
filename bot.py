@@ -12,7 +12,7 @@
 #    License can be found in < https://github.com/Ayush7445/telegram-auto_forwarder/blob/main/License > .
 
 # Import necessary modules
-from telethon import TelegramClient, events
+from pyrogram import TelegramClient, events
 from decouple import config
 import logging
 from telethon.sessions import StringSession
