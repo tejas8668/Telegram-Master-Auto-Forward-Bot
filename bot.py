@@ -16,18 +16,18 @@ from pyrogram import Client, filters
 from decouple import config
 
 # Configure logging
-logging.basicConfig(format='[%(levelname) 5s/%(asctime)s] %(name)s: %(message)s', level=logging.WARNING)
+logging.basicConfig(format='[%(levelname) 5s/%(asctime)s] %(name)s: %(message)s', level=logging.DEBUG)
 
 # Print starting message
 print("Starting...")
 
 # Read configuration from environment variables
-API_ID = config("API_ID", cast=int)
-API_HASH = config("API_HASH")
-SESSION_STRING = config("SESSION_STRING")
-BLOCKED_TEXTS = config("BLOCKED_TEXTS", cast=lambda x: [i.strip().lower() for i in x.split(',')])
+API_ID = config("API_ID", cast=int, default=0)
+API_HASH = config("API_HASH", default="")
+SESSION_STRING = config("SESSION_STRING", default="")
+BLOCKED_TEXTS = config("BLOCKED_TEXTS", default="", cast=lambda x: [i.strip().lower() for i in x.split(',')])
 MEDIA_FORWARD_RESPONSE = config("MEDIA_FORWARD_RESPONSE", default="yes").lower()
-YOUR_ADMIN_USER_ID = config("YOUR_ADMIN_USER_ID", cast=int)
+YOUR_ADMIN_USER_ID = config("YOUR_ADMIN_USER_ID", cast=int, default=0)
 BOT_API_KEY = config("BOT_API_KEY", default="", cast=str)
 
 # Group-wise configuration
@@ -59,7 +59,10 @@ app = Client("my_user_account", session_string=SESSION_STRING, api_id=API_ID, ap
 # Handler for the /start command
 @app.on_message(filters.command("start"))
 async def start(client, message):
-    await message.reply_text(f"Hello {message.from_user.first_name}! Welcome to the Telegram Forwarding Bot. I'm here to help you forward messages.")
+    if message.from_user:
+        await message.reply_text(f"Hello {message.from_user.first_name}! Welcome to the Telegram Forwarding Bot. I'm here to help you forward messages.")
+    else:
+        await message.reply_text("Hello! Welcome to the Telegram Forwarding Bot. I'm here to help you forward messages.")
 
 # Handler for the /help command
 @app.on_message(filters.command("help"))
@@ -82,8 +85,10 @@ async def help(client, message):
 async def forward_messages(client, message):
     try:
         message_text = message.text.lower() if message.text else ""
+        logging.debug(f"Received message: {message.text}")
 
         if any(blocked_text in message_text for blocked_text in BLOCKED_TEXTS):
+            logging.debug(f"Blocked message containing one of the specified texts: {message_text}")
             print(f"Blocked message containing one of the specified texts: {message_text}")
             logging.warning(f"Blocked message containing one of the specified texts: {message_text}")
             return
@@ -99,13 +104,16 @@ async def forward_messages(client, message):
         if message.media and MEDIA_FORWARD_RESPONSE == 'yes':
             for to_channel in target_channels:
                 await client.copy_message(chat_id=to_channel, from_chat_id=message.chat.id, message_id=message.message_id)
+                logging.debug(f"Forwarded media message to channel {to_channel}")
                 print(f"Forwarded media message to channel {to_channel}")
         else:
             for to_channel in target_channels:
                 await client.send_message(chat_id=to_channel, text=message.text if message.text else "")
+                logging.debug(f"Forwarded text message to channel {to_channel}")
                 print(f"Forwarded text message to channel {to_channel}")
 
     except Exception as e:
+        logging.error(f"Error forwarding message: {e}")
         print(f"Error forwarding message: {e}")
 
 # Run the bot
