@@ -14,6 +14,8 @@ API_HASH = config("API_HASH")
 SESSION_STRING = config("SESSION_STRING")
 BLOCKED_TEXTS = config("BLOCKED_TEXTS", default="", cast=lambda x: [i.strip().lower() for i in x.split(',')])
 MEDIA_FORWARD_RESPONSE = config("MEDIA_FORWARD_RESPONSE", default="yes").lower()
+YOUR_ADMIN_USER_ID = config("YOUR_ADMIN_USER_ID", default=0, cast=int)
+BOT_API_KEY = config("BOT_API_KEY", default="", cast=str)
 
 # Group-wise source and destination mapping
 GROUPS = {
