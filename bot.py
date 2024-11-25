@@ -22,36 +22,36 @@ logging.basicConfig(format='[%(levelname) 5s/%(asctime)s] %(name)s: %(message)s'
 print("Starting...")
 
 # Read configuration from environment variables
-API_ID = config("API_ID", cast=int)
-API_HASH = config("API_HASH")
-SESSION_STRING = config("SESSION_STRING")
-BLOCKED_TEXTS = config("BLOCKED_TEXTS", cast=lambda x: [i.strip().lower() for i in x.split(',')])
+API_ID = config("API_ID", cast=int, default=0)
+API_HASH = config("API_HASH", default="")
+SESSION_STRING = config("SESSION_STRING", default="")
+BLOCKED_TEXTS = config("BLOCKED_TEXTS", default="", cast=lambda x: [i.strip().lower() for i in x.split(',')])
 MEDIA_FORWARD_RESPONSE = config("MEDIA_FORWARD_RESPONSE", default="yes").lower()
-YOUR_ADMIN_USER_ID = config("YOUR_ADMIN_USER_ID", cast=int)
+YOUR_ADMIN_USER_ID = config("YOUR_ADMIN_USER_ID", cast=int, default=0)
 BOT_API_KEY = config("BOT_API_KEY", default="", cast=str)
 
 # Group-wise configuration
 GROUPS = {
     "group_A": {
-        "sources": ["-1002487065354"],
-        "destinations": ["-1002325737859"]
+        "sources": ["-1002487065354", ""],
+        "destinations": ["-1002325737859", ""]
     },
     "group_B": {
-        "sources": ["-1002464896968"],
-        "destinations": ["-1002299053628"]
+        "sources": ["-1002464896968", ""],
+        "destinations": ["-1002299053628", ""]
     },
     "group_C": {
-        "sources": ["-100237741286"],
-        "destinations": ["-100220810990", "-100202962655"]
+        "sources": ["-100237741286", ""],
+        "destinations": ["-100220810990", "-100202962655", ""]
     },
     "group_D": {
-        "sources": ["-10024028188893"],
-        "destinations": ["-100222650665", "-100212975571"]
+        "sources": ["-10024028188893", ""],
+        "destinations": ["-100222650665", "-100212975571", ""]
     }
 }
 
 # Flatten the sources list for easier filtering
-FROM_CHANNELS = [source for group in GROUPS.values() for source in group["sources"]]
+FROM_CHANNELS = [source for group in GROUPS.values() for source in group["sources"] if source]
 
 # Initialize Pyrogram client with session string
 app = Client("my_bot", session_string=SESSION_STRING, api_id=API_ID, api_hash=API_HASH, bot_token=BOT_API_KEY)
@@ -69,7 +69,7 @@ async def help(client, message):
         "1. API_ID: Your API ID\n"
         "2. API_HASH: Your API Hash\n"
         "3. SESSION_STRING: Your session string\n"
-        "4. CHANNELS: Group-wise configuration with 'sources' and 'destinations'\n"
+        "4. GROUPS: Group-wise configuration with 'sources' and 'destinations'\n"
         "5. BLOCKED_TEXTS: Comma-separated list of texts to block\n"
         "6. MEDIA_FORWARD_RESPONSE: 'yes' to forward media, 'no' to skip\n"
         "7. YOUR_ADMIN_USER_ID: Your admin user ID\n"
@@ -98,11 +98,11 @@ async def forward_messages(client, message):
 
         if message.media and MEDIA_FORWARD_RESPONSE == 'yes':
             for to_channel in target_channels:
-                await client.send_message(chat_id=to_channel, text=message_text, file=message.document.file_id if message.document else None)
+                await client.copy_message(chat_id=to_channel, from_chat_id=message.chat.id, message_id=message.message_id)
                 print(f"Forwarded media message to channel {to_channel}")
         else:
             for to_channel in target_channels:
-                await client.send_message(chat_id=to_channel, text=message_text)
+                await client.send_message(chat_id=to_channel, text=message.text if message.text else "")
                 print(f"Forwarded text message to channel {to_channel}")
 
     except Exception as e:
