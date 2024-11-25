@@ -1,16 +1,3 @@
-#    Copyright (c) 2021 Ayush
-#    
-#    This program is free software: you can redistribute it and/or modify  
-#    it under the terms of the GNU General Public License as published by  
-#    the Free Software Foundation, version 3.
-# 
-#    This program is distributed in the hope that it will be useful, but 
-#    WITHOUT ANY WARRANTY; without even the implied warranty of 
-#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU 
-#    General Public License for more details.
-# 
-#    License can be found in < https://github.com/Ayush7445/telegram-auto_forwarder/blob/main/License > .
-
 import logging
 from pyrogram import Client, filters
 from decouple import config
@@ -31,14 +18,21 @@ MEDIA_FORWARD_RESPONSE = config("MEDIA_FORWARD_RESPONSE", default="yes").lower()
 # Group-wise source and destination mapping
 GROUPS = {
     "group_A": {
-        "sources": config("GROUP_A_SOURCES", cast=lambda x: [int(i) for i in x.split()]),
-        "destinations": config("GROUP_A_DESTINATIONS", cast=lambda x: [int(i) for i in x.split()])
+        "sources": [-1002487065354],
+        "destinations": [-1002325737859]
     },
     "group_B": {
-        "sources": config("GROUP_B_SOURCES", cast=lambda x: [int(i) for i in x.split()]),
-        "destinations": config("GROUP_B_DESTINATIONS", cast=lambda x: [int(i) for i in x.split()])
+        "sources": [-1002464896968],
+        "destinations": [-1002299053628]
     },
-    # Add more groups as needed
+    "group_C": {
+        "sources": [-1002398034096],
+        "destinations": [-1002348514977]
+    },
+    "group_D": {
+        "sources": [-1002426553583],
+        "destinations": [-1002176533426]
+    }
 }
 
 # Flatten the list of all source channels for filtering
