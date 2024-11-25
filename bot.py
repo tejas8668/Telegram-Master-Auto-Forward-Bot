@@ -22,39 +22,39 @@ logging.basicConfig(format='[%(levelname) 5s/%(asctime)s] %(name)s: %(message)s'
 print("Starting...")
 
 # Read configuration from environment variables
-API_ID = config("API_ID", cast=int, default=0)
-API_HASH = config("API_HASH", default="")
-SESSION_STRING = config("SESSION_STRING", default="")
-BLOCKED_TEXTS = config("BLOCKED_TEXTS", default="", cast=lambda x: [i.strip().lower() for i in x.split(',')])
+API_ID = config("API_ID", cast=int)
+API_HASH = config("API_HASH")
+SESSION_STRING = config("SESSION_STRING")
+BLOCKED_TEXTS = config("BLOCKED_TEXTS", cast=lambda x: [i.strip().lower() for i in x.split(',')])
 MEDIA_FORWARD_RESPONSE = config("MEDIA_FORWARD_RESPONSE", default="yes").lower()
-YOUR_ADMIN_USER_ID = config("YOUR_ADMIN_USER_ID", cast=int, default=0)
+YOUR_ADMIN_USER_ID = config("YOUR_ADMIN_USER_ID", cast=int)
 BOT_API_KEY = config("BOT_API_KEY", default="", cast=str)
 
 # Group-wise configuration
 GROUPS = {
     "group_A": {
-        "sources": ["-1002487065354", ""],
-        "destinations": ["-1002325737859", ""]
+        "sources": ["-1002487065354"],
+        "destinations": ["-1002325737859"]
     },
     "group_B": {
-        "sources": ["-1002464896968", ""],
-        "destinations": ["-1002299053628", ""]
+        "sources": ["-1002464896968"],
+        "destinations": ["-1002299053628"]
     },
     "group_C": {
-        "sources": ["-100237741286", ""],
-        "destinations": ["-100220810990", "-100202962655", ""]
+        "sources": ["-100237741286"],
+        "destinations": ["-100220810990", "-100202962655"]
     },
     "group_D": {
-        "sources": ["-10024028188893", ""],
-        "destinations": ["-100222650665", "-100212975571", ""]
+        "sources": ["-10024028188893"],
+        "destinations": ["-100222650665", "-100212975571"]
     }
 }
 
 # Flatten the sources list for easier filtering
-FROM_CHANNELS = [source for group in GROUPS.values() for source in group["sources"] if source]
+FROM_CHANNELS = [source for group in GROUPS.values() for source in group["sources"]]
 
 # Initialize Pyrogram client with session string
-app = Client("my_bot", session_string=SESSION_STRING, api_id=API_ID, api_hash=API_HASH, bot_token=BOT_API_KEY)
+app = Client("my_user_account", session_string=SESSION_STRING, api_id=API_ID, api_hash=API_HASH)
 
 # Handler for the /start command
 @app.on_message(filters.command("start"))
@@ -72,7 +72,7 @@ async def help(client, message):
         "4. GROUPS: Group-wise configuration with 'sources' and 'destinations'\n"
         "5. BLOCKED_TEXTS: Comma-separated list of texts to block\n"
         "6. MEDIA_FORWARD_RESPONSE: 'yes' to forward media, 'no' to skip\n"
-        "7. YOUR_ADMIN_USER_ID: Your admin user ID\n"
+        "7. YOUR ADMIN USER ID: Your admin user ID\n"
         "8. BOT_API_KEY: Your bot API key\n"
     )
     await message.reply_text(help_text)
