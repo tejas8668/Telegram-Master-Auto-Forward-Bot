@@ -25,16 +25,30 @@ print("Starting...")
 API_ID = config("API_ID", cast=int)
 API_HASH = config("API_HASH")
 SESSION_STRING = config("SESSION_STRING")
-FROM_CHANNEL = config("FROM_CHANNEL", cast=lambda x: [int(i) for i in x.split()])
-TO_CHANNEL = config("TO_CHANNEL", cast=lambda x: [int(i) for i in x.split()])
 BLOCKED_TEXTS = config("BLOCKED_TEXTS", default="", cast=lambda x: [i.strip().lower() for i in x.split(',')])
 MEDIA_FORWARD_RESPONSE = config("MEDIA_FORWARD_RESPONSE", default="yes").lower()
+
+# Group-wise source and destination mapping
+GROUPS = {
+    "group_A": {
+        "sources": config("GROUP_A_SOURCES", cast=lambda x: [int(i) for i in x.split()]),
+        "destinations": config("GROUP_A_DESTINATIONS", cast=lambda x: [int(i) for i in x.split()])
+    },
+    "group_B": {
+        "sources": config("GROUP_B_SOURCES", cast=lambda x: [int(i) for i in x.split()]),
+        "destinations": config("GROUP_B_DESTINATIONS", cast=lambda x: [int(i) for i in x.split()])
+    },
+    # Add more groups as needed
+}
+
+# Flatten the list of all source channels for filtering
+FROM_CHANNELS = [source for group in GROUPS.values() for source in group["sources"]]
 
 # Initialize Pyrogram client
 app = Client("my_forwarder", session_string=SESSION_STRING, api_id=API_ID, api_hash=API_HASH)
 
-# Forward function
-@app.on_message(filters.chat(FROM_CHANNEL))
+# Forward function for messages from all source channels
+@app.on_message(filters.chat(FROM_CHANNELS))
 async def forward_message(client, message):
     try:
         # Check if the message contains blocked texts
@@ -44,9 +58,15 @@ async def forward_message(client, message):
                 print(f"Blocked message containing one of the specified texts: {message.text}")
                 logging.warning(f"Blocked message containing one of the specified texts: {message.text}")
                 return
-        
-        # Forward messages to the destination channels
-        for channel_id in TO_CHANNEL:
+
+        # Determine destination channels for the source
+        destination_channels = []
+        for group in GROUPS.values():
+            if message.chat.id in group["sources"]:
+                destination_channels.extend(group["destinations"])
+
+        # Forward messages to the respective destination channels
+        for channel_id in destination_channels:
             if message.media and MEDIA_FORWARD_RESPONSE == "yes":
                 await client.copy_message(chat_id=channel_id, from_chat_id=message.chat.id, message_id=message.message_id)
                 print(f"Forwarded media message to channel {channel_id}")
