@@ -16,18 +16,18 @@ from pyrogram import Client, filters
 from decouple import config
 
 # Configure logging
-logging.basicConfig(format='[%(levelname) 5s/%(asctime)s] %(name)s: %(message)s', level=logging.DEBUG)
+logging.basicConfig(format='[%(levelname) 5s/%(asctime)s] %(name)s: %(message)s', level=logging.WARNING)
 
 # Print starting message
 print("Starting...")
 
 # Read configuration from environment variables
-API_ID = config("API_ID", cast=int, default=0)
-API_HASH = config("API_HASH", default="")
-SESSION_STRING = config("SESSION_STRING", default="")
-BLOCKED_TEXTS = config("BLOCKED_TEXTS", default="", cast=lambda x: [i.strip().lower() for i in x.split(',')])
+API_ID = config("API_ID", cast=int)
+API_HASH = config("API_HASH")
+SESSION_STRING = config("SESSION_STRING")
+BLOCKED_TEXTS = config("BLOCKED_TEXTS", cast=lambda x: [i.strip().lower() for i in x.split(',')])
 MEDIA_FORWARD_RESPONSE = config("MEDIA_FORWARD_RESPONSE", default="yes").lower()
-YOUR_ADMIN_USER_ID = config("YOUR_ADMIN_USER_ID", cast=int, default=0)
+YOUR_ADMIN_USER_ID = config("YOUR_ADMIN_USER_ID", cast=int)
 BOT_API_KEY = config("BOT_API_KEY", default="", cast=str)
 
 # Group-wise configuration
@@ -41,12 +41,12 @@ GROUPS = {
         "destinations": ["-1002299053628"]
     },
     "group_C": {
-        "sources": ["-1002299053628"],
-        "destinations": ["-1002325737859"]
+        "sources": ["-100237741286"],
+        "destinations": ["-100220810990", "-100202962655"]
     },
     "group_D": {
-        "sources": ["-1002299053628"],
-        "destinations": ["1002325737859"]
+        "sources": ["-10024028188893"],
+        "destinations": ["-100222650665", "-100212975571"]
     }
 }
 
@@ -85,10 +85,8 @@ async def help(client, message):
 async def forward_messages(client, message):
     try:
         message_text = message.text.lower() if message.text else ""
-        logging.debug(f"Received message: {message.text}")
 
         if any(blocked_text in message_text for blocked_text in BLOCKED_TEXTS):
-            logging.debug(f"Blocked message containing one of the specified texts: {message_text}")
             print(f"Blocked message containing one of the specified texts: {message_text}")
             logging.warning(f"Blocked message containing one of the specified texts: {message_text}")
             return
@@ -104,16 +102,13 @@ async def forward_messages(client, message):
         if message.media and MEDIA_FORWARD_RESPONSE == 'yes':
             for to_channel in target_channels:
                 await client.copy_message(chat_id=to_channel, from_chat_id=message.chat.id, message_id=message.message_id)
-                logging.debug(f"Forwarded media message to channel {to_channel}")
                 print(f"Forwarded media message to channel {to_channel}")
         else:
             for to_channel in target_channels:
                 await client.send_message(chat_id=to_channel, text=message.text if message.text else "")
-                logging.debug(f"Forwarded text message to channel {to_channel}")
                 print(f"Forwarded text message to channel {to_channel}")
 
     except Exception as e:
-        logging.error(f"Error forwarding message: {e}")
         print(f"Error forwarding message: {e}")
 
 # Run the bot
