@@ -28,8 +28,8 @@ GROUPS = {
         "destinations": [-1002299053628]
     },
     "group_C": {
-        "sources": [-1002398034096],
-        "destinations": [-1002348514977]
+        "sources": [-1002045849530],
+        "destinations": [-1002377412867]
     },
     "group_D": {
         "sources": [-1002426553583],
