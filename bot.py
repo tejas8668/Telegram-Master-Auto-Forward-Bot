@@ -71,7 +71,7 @@ async def forward_message(client, message):
         # Check if the message contains blocked texts
         if message.text:
             message_text = message.text.lower()
-            if any blocked_text in message_text for blocked_text in BLOCKED_TEXTS:
+            if any(blocked_text in message_text for blocked_text in BLOCKED_TEXTS):
                 print(f"Blocked message containing one of the specified texts: {message.text}")
                 logging.warning(f"Blocked message containing one of the specified texts: {message.text}")
                 return
@@ -80,7 +80,7 @@ async def forward_message(client, message):
         destination_channels = []
         for group in GROUPS.values():
             if message.chat.id in group["sources"]:
-                destination_channels extend(group["destinations"])
+                destination_channels.extend(group["destinations"])
 
         # Copy messages to the respective destination channels
         for channel_id in destination_channels:
