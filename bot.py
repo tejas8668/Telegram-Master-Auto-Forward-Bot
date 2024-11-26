@@ -47,6 +47,9 @@ app = Client("my_forwarder", session_string=SESSION_STRING, api_id=API_ID, api_h
 @app.on_message(filters.chat(FROM_CHANNELS))
 async def forward_message(client, message):
     try:
+        # Add logging for message attributes
+        logging.warning(f"Message attributes: {dir(message)}")
+
         # Check if the message contains blocked texts
         if message.text:
             message_text = message.text.lower()
@@ -61,14 +64,14 @@ async def forward_message(client, message):
             if message.chat.id in group["sources"]:
                 destination_channels.extend(group["destinations"])
 
-        # Forward messages to the respective destination channels
+        # Copy messages to the respective destination channels
         for channel_id in destination_channels:
             if message.media and MEDIA_FORWARD_RESPONSE == "yes":
                 await client.copy_message(chat_id=channel_id, from_chat_id=message.chat.id, message_id=message.message_id)
-                print(f"Forwarded media message to channel {channel_id}")
+                print(f"Copied media message to channel {channel_id}")
             elif message.text:
                 await client.send_message(chat_id=channel_id, text=message.text)
-                print(f"Forwarded text message to channel {channel_id}")
+                print(f"Copied text message to channel {channel_id}")
 
     except Exception as e:
         print(f"Error forwarding message: {e}")
