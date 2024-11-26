@@ -43,6 +43,24 @@ FROM_CHANNELS = [source for group in GROUPS.values() for source in group["source
 # Initialize Pyrogram client
 app = Client("my_forwarder", session_string=SESSION_STRING, api_id=API_ID, api_hash=API_HASH)
 
+# Function to handle media messages
+async def handle_media_message(client, message, channel_id):
+    try:
+        if message.photo:
+            await client.send_photo(chat_id=channel_id, photo=message.photo.file_id, caption=message.caption)
+        elif message.video:
+            await client.send_video(chat_id=channel_id, video=message.video.file_id, caption=message.caption)
+        elif message.document:
+            await client.send_document(chat_id=channel_id, document=message.document.file_id, caption=message.caption)
+        elif message.audio:
+            await client.send_audio(chat_id=channel_id, audio=message.audio.file_id, caption=message.caption)
+        elif message.voice:
+            await client.send_voice(chat_id=channel_id, voice=message.voice.file_id, caption=message.caption)
+        else:
+            logging.warning("Unhandled media type.")
+    except Exception as e:
+        logging.error(f"Error handling media message: {e}")
+
 # Forward function for messages from all source channels
 @app.on_message(filters.chat(FROM_CHANNELS))
 async def forward_message(client, message):
@@ -53,34 +71,25 @@ async def forward_message(client, message):
         # Check if the message contains blocked texts
         if message.text:
             message_text = message.text.lower()
-            if any(blocked_text in message_text for blocked_text in BLOCKED_TEXTS):
+            if any blocked_text in message_text for blocked_text in BLOCKED_TEXTS:
                 print(f"Blocked message containing one of the specified texts: {message.text}")
                 logging.warning(f"Blocked message containing one of the specified texts: {message.text}")
                 return
-
-        # Ensure message has necessary attributes
-        if not hasattr(message, 'message_id'):
-            print(f"Message object has no attribute 'message_id'")
-            logging.error(f"Message object has no attribute 'message_id'")
-            return
 
         # Determine destination channels for the source
         destination_channels = []
         for group in GROUPS.values():
             if message.chat.id in group["sources"]:
-                destination_channels.extend(group["destinations"])
+                destination_channels extend(group["destinations"])
 
         # Copy messages to the respective destination channels
         for channel_id in destination_channels:
             if message.media and MEDIA_FORWARD_RESPONSE == "yes":
-                if hasattr(message, 'message_id'):
-                    await client.copy_message(chat_id=channel_id, from_chat_id=message.chat.id, message_id=message.message_id)
-                    print(f"Copied media message to channel {channel_id}")
-                else:
-                    print(f"Message object has no attribute 'message_id' for media message")
+                await handle_media_message(client, message, channel_id)
+                logging.info(f"Copied media message to channel {channel_id}")
             elif message.text:
                 await client.send_message(chat_id=channel_id, text=message.text)
-                print(f"Copied text message to channel {channel_id}")
+                logging.info(f"Copied text message to channel {channel_id}")
 
     except Exception as e:
         print(f"Error forwarding message: {e}")
