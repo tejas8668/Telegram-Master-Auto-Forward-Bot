@@ -58,6 +58,12 @@ async def forward_message(client, message):
                 logging.warning(f"Blocked message containing one of the specified texts: {message.text}")
                 return
 
+        # Ensure message has necessary attributes
+        if not hasattr(message, 'message_id'):
+            print(f"Message object has no attribute 'message_id'")
+            logging.error(f"Message object has no attribute 'message_id'")
+            return
+
         # Determine destination channels for the source
         destination_channels = []
         for group in GROUPS.values():
@@ -67,8 +73,11 @@ async def forward_message(client, message):
         # Copy messages to the respective destination channels
         for channel_id in destination_channels:
             if message.media and MEDIA_FORWARD_RESPONSE == "yes":
-                await client.copy_message(chat_id=channel_id, from_chat_id=message.chat.id, message_id=message.message_id)
-                print(f"Copied media message to channel {channel_id}")
+                if hasattr(message, 'message_id'):
+                    await client.copy_message(chat_id=channel_id, from_chat_id=message.chat.id, message_id=message.message_id)
+                    print(f"Copied media message to channel {channel_id}")
+                else:
+                    print(f"Message object has no attribute 'message_id' for media message")
             elif message.text:
                 await client.send_message(chat_id=channel_id, text=message.text)
                 print(f"Copied text message to channel {channel_id}")
