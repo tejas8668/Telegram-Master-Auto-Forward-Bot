@@ -1,10 +1,9 @@
 import logging
 from pyrogram import Client, filters
 from decouple import config
-import asyncio
 
 # Configure logging
-logging.basicConfig(format='[%(levelname) 5s/%(asctime)s] %(name)s: %(message)s', level=logging.INFO)
+logging.basicConfig(format='[%(levelname) 5s/%(asctime)s] %(name)s: %(message)s', level=logging.WARNING)
 
 # Print starting message
 print("Starting...")
@@ -66,64 +65,36 @@ async def handle_media_message(client, message, channel_id):
 @app.on_message(filters.chat(FROM_CHANNELS))
 async def forward_message(client, message):
     try:
-        logging.info(f"Received message from: {message.chat.id}")
+        # Add logging for message attributes
+        logging.warning(f"Message attributes: {dir(message)}")
 
         # Check if the message contains blocked texts
         if message.text:
             message_text = message.text.lower()
             if any(blocked_text in message_text for blocked_text in BLOCKED_TEXTS):
+                print(f"Blocked message containing one of the specified texts: {message.text}")
                 logging.warning(f"Blocked message containing one of the specified texts: {message.text}")
                 return
 
         # Determine destination channels for the source
         destination_channels = []
-        for group_name, group in GROUPS.items():
+        for group in GROUPS.values():
             if message.chat.id in group["sources"]:
                 destination_channels.extend(group["destinations"])
-                logging.info(f"Message from {message.chat.id} matched group {group_name}, forwarding to {group['destinations']}")
-
-        if not destination_channels:
-            logging.warning(f"No destination channels found for message from {message.chat.id}")
-            return
 
         # Copy messages to the respective destination channels
         for channel_id in destination_channels:
-            try:
-                if message.media and MEDIA_FORWARD_RESPONSE == "yes":
-                    await handle_media_message(client, message, channel_id)
-                    logging.info(f"Copied media message to channel {channel_id}")
-                elif message.text:
-                    await client.send_message(chat_id=channel_id, text=message.text)
-                    logging.info(f"Copied text message to channel {channel_id}")
-            except Exception as e:
-                logging.error(f"Failed to forward message to {channel_id}: {e}")
+            if message.media and MEDIA_FORWARD_RESPONSE == "yes":
+                await handle_media_message(client, message, channel_id)
+                logging.info(f"Copied media message to channel {channel_id}")
+            elif message.text:
+                await client.send_message(chat_id=channel_id, text=message.text)
+                logging.info(f"Copied text message to channel {channel_id}")
 
     except Exception as e:
-        logging.error(f"Error forwarding message from {message.chat.id}: {e}")
+        print(f"Error forwarding message: {e}")
+        logging.error(f"Error forwarding message: {e}")
 
-# Function to verify peer IDs
-async def verify_peer_ids(client, peer_ids):
-    valid_peers = []
-    for peer_id in peer_ids:
-        try:
-            peer = await client.get_chat(peer_id)
-            valid_peers.append(peer_id)
-            logging.info(f"Verified peer ID: {peer_id} (Title: {peer.title})")
-        except Exception as e:
-            logging.error(f"Invalid peer ID: {peer_id} - {e}")
-    return valid_peers
-
-# Run the verification and then the bot
-async def run_bot():
-    async with app:
-        verified_sources = await verify_peer_ids(app, FROM_CHANNELS)
-        # Update FROM_CHANNELS with only valid IDs
-        FROM_CHANNELS[:] = verified_sources
-    await app.start()
-    await app.run()
-
-# Start the event loop and run the bot
-if __name__ == "__main__":
-    print("Bot has started.")
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(run_bot())
+# Run the bot
+print("Bot has started.")
+app.run()
