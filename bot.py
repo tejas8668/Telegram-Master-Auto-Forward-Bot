@@ -20,7 +20,7 @@ BOT_API_KEY = config("BOT_API_KEY", default="", cast=str)
 # Group-wise source and destination mapping
 GROUPS = {
     "group_A": {
-        "sources": [-1002305702191],
+        "sources": [-1002305702191, -1002280468356],
         "destinations": [-1002377412867]
     },
     "group_B": {
@@ -32,8 +32,8 @@ GROUPS = {
         "destinations": [-1002377412867]
     },
     "group_D": {
-        "sources": [-1002280468356],
-        "destinations": [-1002377412867]
+        "sources": [-1001696674966],
+        "destinations": [-1002325737859]
     }
 }
 
