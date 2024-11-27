@@ -100,6 +100,29 @@ async def forward_message(client, message):
     except Exception as e:
         logging.error(f"Error forwarding message from {message.chat.id}: {e}")
 
+# Function to verify peer IDs
+async def verify_peer_ids(client, peer_ids):
+    valid_peers = []
+    for peer_id in peer_ids:
+        try:
+            peer = await client.get_chat(peer_id)
+            valid_peers.append(peer_id)
+            logging.info(f"Verified peer ID: {peer_id} (Title: {peer.title})")
+        except Exception as e:
+            logging.error(f"Invalid peer ID: {peer_id} - {e}")
+    return valid_peers
+
+# Example usage during initialization
+async def main():
+    async with app:
+        verified_sources = await verify_peer_ids(app, FROM_CHANNELS)
+        # Update FROM_CHANNELS with only valid IDs
+        FROM_CHANNELS[:] = verified_sources
+
+# Run the verification before starting the bot
+app.start()
+app.loop.run_until_complete(main())
+app.run()
+
 # Run the bot
 print("Bot has started.")
-app.run()
