@@ -1,6 +1,7 @@
 import logging
 from pyrogram import Client, filters
 from decouple import config
+import asyncio
 
 # Configure logging
 logging.basicConfig(format='[%(levelname) 5s/%(asctime)s] %(name)s: %(message)s', level=logging.INFO)
@@ -112,20 +113,17 @@ async def verify_peer_ids(client, peer_ids):
             logging.error(f"Invalid peer ID: {peer_id} - {e}")
     return valid_peers
 
-# Example usage during initialization
-async def main():
+# Run the verification and then the bot
+async def run_bot():
     async with app:
         verified_sources = await verify_peer_ids(app, FROM_CHANNELS)
         # Update FROM_CHANNELS with only valid IDs
         FROM_CHANNELS[:] = verified_sources
-
-# Run the verification and then the bot
-async def run_bot():
     await app.start()
-    await main()
     await app.run()
 
-# Run the bot
+# Start the event loop and run the bot
 if __name__ == "__main__":
     print("Bot has started.")
-    app.loop.run_until_complete(run_bot())
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(run_bot())
