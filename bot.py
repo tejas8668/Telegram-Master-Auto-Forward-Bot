@@ -3,7 +3,7 @@ from pyrogram import Client, filters
 from decouple import config
 
 # Configure logging
-logging.basicConfig(format='[%(levelname) 5s/%(asctime)s] %(name)s: %(message)s', level=logging.WARNING)
+logging.basicConfig(format='[%(levelname) 5s/%(asctime)s] %(name)s: %(message)s', level=logging.INFO)
 
 # Print starting message
 print("Starting...")
@@ -40,8 +40,8 @@ GROUPS = {
 # Flatten the list of all source channels for filtering
 FROM_CHANNELS = [source for group in GROUPS.values() for source in group["sources"]]
 
-# Initialize Pyrogram client
-app = Client("my_forwarder", session_string=SESSION_STRING, api_id=API_ID, api_hash=API_HASH)
+# Initialize Pyrogram client with session string
+app = Client("my_account_forwarder", session_string=SESSION_STRING, api_id=API_ID, api_hash=API_HASH)
 
 # Function to handle media messages
 async def handle_media_message(client, message, channel_id):
@@ -65,35 +65,41 @@ async def handle_media_message(client, message, channel_id):
 @app.on_message(filters.chat(FROM_CHANNELS))
 async def forward_message(client, message):
     try:
-        # Add logging for message attributes
-        logging.warning(f"Message attributes: {dir(message)}")
+        logging.info(f"Received message from: {message.chat.id}")
 
         # Check if the message contains blocked texts
         if message.text:
             message_text = message.text.lower()
             if any(blocked_text in message_text for blocked_text in BLOCKED_TEXTS):
-                print(f"Blocked message containing one of the specified texts: {message.text}")
                 logging.warning(f"Blocked message containing one of the specified texts: {message.text}")
                 return
 
         # Determine destination channels for the source
         destination_channels = []
-        for group in GROUPS.values():
+        for group_name, group in GROUPS.items():
             if message.chat.id in group["sources"]:
                 destination_channels.extend(group["destinations"])
+                logging.info(f"Message from {message.chat.id} matched group {group_name}, forwarding to {group['destinations']}")
+
+        # Check if no destination channels found
+        if not destination_channels:
+            logging.warning(f"No destination channels found for message from {message.chat.id}")
+            return
 
         # Copy messages to the respective destination channels
         for channel_id in destination_channels:
-            if message.media and MEDIA_FORWARD_RESPONSE == "yes":
-                await handle_media_message(client, message, channel_id)
-                logging.info(f"Copied media message to channel {channel_id}")
-            elif message.text:
-                await client.send_message(chat_id=channel_id, text=message.text)
-                logging.info(f"Copied text message to channel {channel_id}")
+            try:
+                if message.media and MEDIA_FORWARD_RESPONSE == "yes":
+                    await handle_media_message(client, message, channel_id)
+                    logging.info(f"Copied media message to channel {channel_id}")
+                elif message.text:
+                    await client.send_message(chat_id=channel_id, text=message.text)
+                    logging.info(f"Copied text message to channel {channel_id}")
+            except Exception as e:
+                logging.error(f"Failed to forward message to {channel_id}: {e}")
 
     except Exception as e:
-        print(f"Error forwarding message: {e}")
-        logging.error(f"Error forwarding message: {e}")
+        logging.error(f"Error forwarding message from {message.chat.id}: {e}")
 
 # Run the bot
 print("Bot has started.")
