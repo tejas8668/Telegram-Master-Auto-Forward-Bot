@@ -126,5 +126,6 @@ async def run_bot():
     await app.run()
 
 # Run the bot
-print("Bot has started.")
-app.loop.run_until_complete(run_bot())
+if __name__ == "__main__":
+    print("Bot has started.")
+    app.loop.run_until_complete(run_bot())
