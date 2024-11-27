@@ -119,10 +119,12 @@ async def main():
         # Update FROM_CHANNELS with only valid IDs
         FROM_CHANNELS[:] = verified_sources
 
-# Run the verification before starting the bot
-app.start()
-app.loop.run_until_complete(main())
-app.run()
+# Run the verification and then the bot
+async def run_bot():
+    await app.start()
+    await main()
+    await app.run()
 
 # Run the bot
 print("Bot has started.")
+app.loop.run_until_complete(run_bot())
